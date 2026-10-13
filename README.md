@@ -29,3 +29,11 @@ Sprawdzone adresy: /Book/Hello, /Book/Details/3, /Book/Status?code=404, ?code=41
 Zadanie C1: w zakładce Network (wpisz, jak przeglądarka pokazała każdy z kodów: 404, 418, 500).
 
 StatusCode(404) nie wyświetla strony błędu, ponieważ zwraca tylko kod statusu z pustym ciałem odpowiedzi. Stronę błędu generuje osobny middleware (UseStatusCodePages), który nie jest włączony w tym szablonie. Wrócimy do tego w Lab 3.
+## D. Odczyt danych z żądania
+
+| Akcja | Źródło danych |
+|---|---|
+| Echo | query string (/Book/Echo?name=Ala&count=3) |
+| Square | zmienna ścieżki {id} (/Book/Square/7) |
+| Import | ciało żądania w formacie JSON (POST /Book/Import) |
+| Inspect | surowy obiekt Request |
