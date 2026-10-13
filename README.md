@@ -11,3 +11,14 @@
 | wwwroot/ | Pliki statyczne (CSS, JS, biblioteki). Jedyny katalog serwowany bezpośrednio. |
 | appsettings.json | Konfiguracja aplikacji. |
 | Properties/launchSettings.json | Porty i środowisko uruchomieniowe, używane tylko na maszynie dewelopera. |
+## B. Podgląd HTTP w przeglądarce
+
+| Pytanie | Odpowiedź |
+|---|---|
+| Metoda żądania | GET |
+| Kod statusu odpowiedzi | 200 OK |
+| Content-Type odpowiedzi | text/html; charset=utf-8 |
+| Nagłówek User-Agent żądania | (wklej swój, np. Mozilla/5.0 ... Chrome/...) |
+| Liczba żądań i dlaczego więcej niż jedno | (wpisz liczbę z dołu okna Network). Przeglądarka najpierw pobiera dokument HTML, a następnie osobnymi żądaniami zasoby, do których on się odwołuje: CSS, JavaScript, ikonę favicon. |
+
+Adres /abc zwraca kod statusu 404 Not Found.
