@@ -22,3 +22,10 @@
 | Liczba żądań i dlaczego więcej niż jedno | (wpisz liczbę z dołu okna Network). Przeglądarka najpierw pobiera dokument HTML, a następnie osobnymi żądaniami zasoby, do których on się odwołuje: CSS, JavaScript, ikonę favicon. |
 
 Adres /abc zwraca kod statusu 404 Not Found.
+## C. BookController
+
+Sprawdzone adresy: /Book/Hello, /Book/Details/3, /Book/Status?code=404, ?code=418, ?code=500.
+
+Zadanie C1: w zakładce Network (wpisz, jak przeglądarka pokazała każdy z kodów: 404, 418, 500).
+
+StatusCode(404) nie wyświetla strony błędu, ponieważ zwraca tylko kod statusu z pustym ciałem odpowiedzi. Stronę błędu generuje osobny middleware (UseStatusCodePages), który nie jest włączony w tym szablonie. Wrócimy do tego w Lab 3.
