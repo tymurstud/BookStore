@@ -51,3 +51,18 @@ Zrzut ekranu zakładki Network dla /Book/Echo?name=Ala: docs/network-echo.png.
 - POST /Book/Import z nagłówkiem Content-Type: text/plain zwraca 415 Unsupported Media Type, ponieważ powiązanie [FromBody] wymaga zgodnego typu zawartości (docs/postman-415.png).
 - GET /Book/Import zwrócił w moim projekcie 404 Not Found (instrukcja przewidywała 405 Method Not Allowed). Akcja Import jest oznaczona atrybutem [HttpPost], więc żądanie GET nie jest przez nią obsługiwane.
 - Kolekcja Postman: docs/BookStore.postman_collection.json.
+
+Uwaga: port aplikacji zależy od profilu uruchomieniowego (podczas testów w Postmanie było to 5000, później 5258).
+
+## Zadania samodzielne
+
+- Sum: /Book/Sum?a=2&b=3 zwraca 5. Dla /Book/Sum?a=x&b=3 zwracany jest komunikat "Niepoprawne parametry" ze statusem 400 Bad Request. Model binding nie potrafi zamienić tekstu "x" na typ int, więc ModelState.IsValid ma wartość false i akcja zwraca BadRequest. Bez sprawdzania ModelState parametr a miałby wartość domyślną 0.
+- UserAgent: akcja zwraca nagłówek User-Agent klienta. W przeglądarce wynik to Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:159.0) Gecko/20100101 Firefox/159.0. W Postmanie klient przedstawia się innym ciągiem, ponieważ każdy klient wysyła własny User-Agent.
+- Health: /Book/Health zwraca JSON z polami status ("ok") i time (bieżący czas). Metoda Json() ustawia nagłówek Content-Type: application/json.
+
+## Pytania kontrolne
+
+1. GET jest idempotentny (wielokrotne wywołanie nie zmienia stanu serwera), a dane przekazuje w adresie URL (query string). POST nie jest idempotentny, a dane przekazuje w ciele żądania.
+2. 200 OK – sukces; 302 Found – tymczasowe przekierowanie; 400 Bad Request – błędne żądanie; 401 Unauthorized – brak uwierzytelnienia; 403 Forbidden – brak uprawnień; 404 Not Found – nie znaleziono zasobu; 405 Method Not Allowed – niedozwolona metoda HTTP; 415 Unsupported Media Type – nieobsługiwany typ zawartości; 500 Internal Server Error – błąd serwera.
+3. Model binding określa źródło na podstawie atrybutów ([FromQuery], [FromRoute], [FromBody]). Bez atrybutów szuka wartości po nazwie parametru w danych formularza, w trasie i w query string.
+4. Pliki z wwwroot są serwowane przez middleware UseStaticFiles. Katalog Controllers zawiera kod źródłowy, który jest kompilowany i wykonywany na serwerze, a nie wysyłany klientowi.
