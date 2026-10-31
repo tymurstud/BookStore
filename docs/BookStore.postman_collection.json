@@ -1,0 +1,33 @@
+{
+  "info": {
+    "name": "BookStore (Lab 1)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" }
+  ],
+  "item": [
+    {
+      "name": "Lab 1 – GET /Book/Echo",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/Book/Echo?name=Ala&count=2", "host": ["{{baseUrl}}"], "path": ["Book", "Echo"], "query": [{ "key": "name", "value": "Ala" }, { "key": "count", "value": "2" }] } }
+    },
+    {
+      "name": "Lab 1 – POST /Book/Import (JSON)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{ \"title\": \"Solaris\", \"isbn\": \"9788308065341\", \"price\": 39.9 }" },
+        "url": { "raw": "{{baseUrl}}/Book/Import", "host": ["{{baseUrl}}"], "path": ["Book", "Import"] }
+      }
+    },
+    {
+      "name": "Lab 1 – POST /Book/Import (text/plain -> 415)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "text/plain" }],
+        "body": { "mode": "raw", "raw": "to nie jest JSON" },
+        "url": { "raw": "{{baseUrl}}/Book/Import", "host": ["{{baseUrl}}"], "path": ["Book", "Import"] }
+      }
+    }
+  ]
+}
