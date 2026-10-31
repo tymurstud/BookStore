@@ -32,4 +32,16 @@ public class BookController : Controller
         foreach (var h in Request.Headers) sb.AppendLine($"{h.Key}: {h.Value}");
         return Content(sb.ToString(), "text/plain; charset=utf-8");
     }
+    public IActionResult Sum(int a, int b)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest("Niepoprawne parametry");
+        return Content((a + b).ToString());
+    }
+
+    public IActionResult UserAgent() =>
+        Content(Request.Headers.UserAgent.ToString());
+
+    public IActionResult Health() =>
+        Json(new { status = "ok", time = DateTime.Now });
 }
