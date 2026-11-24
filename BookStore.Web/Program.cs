@@ -1,9 +1,14 @@
 using System.Globalization;
+using BookStore.Web.Data;
 using BookStore.Web.Filters;
 using BookStore.Web.Middleware;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(o =>
+    o.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddSingleton<RequestStats>();
 builder.Services.AddScoped<LogActionFilter>();
