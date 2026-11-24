@@ -19,4 +19,6 @@ public class Book
 
     [Required]
     public string Author { get; set; } = "";
+
+    public string? Publisher { get; set; }
 }
