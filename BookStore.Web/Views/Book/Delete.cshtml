@@ -1,0 +1,23 @@
+@model BookStore.Web.Models.Book
+
+@{
+    ViewData["Title"] = "Usuń książkę";
+}
+
+<h2 class="text-danger">Usuń książkę</h2>
+<p class="lead">Czy na pewno chcesz usunąć tę książkę?</p>
+
+<div class="card mb-3 border-danger" style="max-width: 600px;">
+    <div class="card-body">
+        <h4>@Model.Title</h4>
+        <p class="text-muted">Autor: @Model.Author</p>
+        <p>ISBN: <code>@Model.Isbn</code></p>
+        <p>Cena: @Model.Price.ToString("C")</p>
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-danger">Tak, usuń</button>
+            <a asp-action="Index" class="btn btn-secondary">Anuluj</a>
+        </form>
+    </div>
+</div>

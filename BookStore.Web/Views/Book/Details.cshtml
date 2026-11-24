@@ -1,1 +1,32 @@
-﻿<h2>Szczegóły książki nr @ViewBag.Id</h2>
+﻿@model BookStore.Web.Models.Book
+
+@{
+    ViewData["Title"] = $"Szczegóły: {Model.Title}";
+}
+
+<h2>Szczegóły książki nr @Model.Id</h2>
+
+<div class="card mb-3" style="max-width: 600px;">
+    <div class="card-body">
+        <h4 class="card-title">@Model.Title</h4>
+        <h6 class="card-subtitle mb-3 text-muted">@Model.Author</h6>
+        <dl class="row">
+            <dt class="col-sm-4">ISBN</dt>
+            <dd class="col-sm-8"><code>@Model.Isbn</code></dd>
+
+            <dt class="col-sm-4">Data wydania</dt>
+            <dd class="col-sm-8">@(Model.PublicationDate?.ToString("yyyy-MM-dd") ?? "-")</dd>
+
+            <dt class="col-sm-4">Liczba stron</dt>
+            <dd class="col-sm-8">@Model.NumPages</dd>
+
+            <dt class="col-sm-4">Cena</dt>
+            <dd class="col-sm-8">@Model.Price.ToString("C")</dd>
+
+            <dt class="col-sm-4">Wydawca</dt>
+            <dd class="col-sm-8">@(Model.Publisher ?? "-")</dd>
+        </dl>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edytuj</a>
+        <a asp-action="Index" class="btn btn-secondary">Powrót do listy</a>
+    </div>
+</div>

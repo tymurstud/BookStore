@@ -1,18 +1,74 @@
-@model List<Book>
+@model BookStore.Web.Models.PagedResult<BookStore.Web.Models.Book>
+
 @{
     ViewData["Title"] = "Książki";
+    string currentSort = ViewBag.Sort as string ?? "title";
+    string currentDir = ViewBag.Dir as string ?? "asc";
+    string nextDir = currentDir == "asc" ? "desc" : "asc";
 }
+
 <h2>Książki</h2>
-<a asp-action="Create" class="btn btn-primary mb-3">+ Dodaj książkę</a>
-<table class="table">
-    <thead><tr><th>Tytuł</th><th>Autor</th><th>Rok</th><th>Cena</th></tr></thead>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <a asp-action="Create" class="btn btn-primary">+ Dodaj książkę</a>
+    </div>
+    <div class="col-md-6">
+        <form method="get" asp-action="Index" class="d-flex">
+            <input type="text" name="search" value="@ViewBag.Search" class="form-control me-2" placeholder="Szukaj po tytule lub ISBN..." />
+            <button type="submit" class="btn btn-outline-secondary">Szukaj</button>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.Search))
+            {
+                <a asp-action="Index" class="btn btn-link text-decoration-none">Wyczyść</a>
+            }
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>
+                <a asp-action="Index" asp-route-sort="title" asp-route-dir="@(currentSort == "title" ? nextDir : "asc")" asp-route-search="@ViewBag.Search">
+                    Tytuł @(currentSort == "title" ? (currentDir == "asc" ? "▲" : "▼") : "")
+                </a>
+            </th>
+            <th>Autor</th>
+            <th>
+                <a asp-action="Index" asp-route-sort="date" asp-route-dir="@(currentSort == "date" ? nextDir : "asc")" asp-route-search="@ViewBag.Search">
+                    Rok @(currentSort == "date" ? (currentDir == "asc" ? "▲" : "▼") : "")
+                </a>
+            </th>
+            <th>
+                <a asp-action="Index" asp-route-sort="price" asp-route-dir="@(currentSort == "price" ? nextDir : "asc")" asp-route-search="@ViewBag.Search">
+                    Cena @(currentSort == "price" ? (currentDir == "asc" ? "▲" : "▼") : "")
+                </a>
+            </th>
+            <th>Wydawca</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
     <tbody>
-    @foreach (var b in Model)
-    {
-        <partial name="_BookRow" model="b" />
-    }
+        @foreach (var b in Model.Items)
+        {
+            <partial name="_BookRow" model="b" />
+        }
     </tbody>
 </table>
+
+@if (Model.TotalPages > 1)
+{
+    <nav>
+        <ul class="pagination">
+            @for (var p = 1; p <= Model.TotalPages; p++)
+            {
+                <li class="page-item @(p == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-search="@ViewBag.Search" asp-route-sort="@ViewBag.Sort" asp-route-dir="@ViewBag.Dir">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
 
 @section Styles {
     <style>

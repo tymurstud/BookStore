@@ -1,0 +1,27 @@
+@model List<BookStore.Web.Models.Book>
+
+@{
+    ViewData["Title"] = ViewBag.Filter ?? "Filtrowane książki";
+}
+
+<h2>@ViewBag.Filter</h2>
+<a asp-action="Index" class="btn btn-secondary mb-3">Wszystkie książki</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Tytuł</th>
+            <th>Autor</th>
+            <th>Rok</th>
+            <th>Cena</th>
+            <th>Wydawca</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var b in Model)
+        {
+            <partial name="_BookRow" model="b" />
+        }
+    </tbody>
+</table>

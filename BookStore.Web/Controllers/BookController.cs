@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using BookStore.Web.Filters;
 using BookStore.Web.Models;
+using BookStore.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Web.Controllers;
@@ -9,44 +10,54 @@ namespace BookStore.Web.Controllers;
 [MeasureTime]
 public class BookController : Controller
 {
+    private readonly IBookService _books;
+
+    public BookController(IBookService books) => _books = books;
+
     public IActionResult Hello() => Content("Witaj w BookStore!", "text/plain; charset=utf-8");
 
     public IActionResult Status(int code = 200) => StatusCode(code);
 
     [HttpGet("Book/Details/{id:int}")]
-    public IActionResult Details(int id)
+    public async Task<IActionResult> Details(int id)
     {
-        ViewBag.Id = id;
-        return View();
+        var book = await _books.GetByIdAsync(id);
+        if (book == null) return NotFound();
+        return View(book);
     }
 
-    public IActionResult Index() => View(BookStoreMemory.Books);
-
-    public IActionResult ByYear(int year)
+    public async Task<IActionResult> Index(int page = 1, int pageSize = 5, string? search = null, string? sort = null, string? dir = null)
     {
-        var books = BookStoreMemory.Books
-            .Where(b => b.PublicationDate?.Year == year)
-            .ToList();
+        var result = await _books.GetPageAsync(page, pageSize, search, sort, dir);
+        ViewBag.Search = search;
+        ViewBag.Sort = sort;
+        ViewBag.Dir = dir;
+        return View(result);
+    }
+
+    public async Task<IActionResult> ByYear(int year)
+    {
+        var result = await _books.GetPageAsync(1, 100, null, "title", "asc");
+        var books = result.Items.Where(b => b.PublicationDate?.Year == year).ToList();
         ViewBag.Filter = $"Rok: {year}";
-        return View("Index", books);
+        return View("Filtered", books);
     }
 
-    public IActionResult ByIsbn(string isbn)
+    public async Task<IActionResult> ByIsbn(string isbn)
     {
         var normalized = isbn.Replace("-", "").Replace(" ", "");
-        var book = BookStoreMemory.Books
-            .FirstOrDefault(b => b.Isbn.Replace("-", "").Replace(" ", "") == normalized);
+        var result = await _books.GetPageAsync(1, 100, normalized);
+        var book = result.Items.FirstOrDefault();
         if (book == null) return NotFound();
         return RedirectToAction(nameof(Details), new { id = book.Id });
     }
 
-    public IActionResult Archive(int year, int month)
+    public async Task<IActionResult> Archive(int year, int month)
     {
-        var books = BookStoreMemory.Books
-            .Where(b => b.PublicationDate?.Year == year)
-            .ToList();
+        var result = await _books.GetPageAsync(1, 100, null, "title", "asc");
+        var books = result.Items.Where(b => b.PublicationDate?.Year == year).ToList();
         ViewBag.Filter = $"Archiwum: {year}/{month:D2}";
-        return View("Index", books);
+        return View("Filtered", books);
     }
 
     public IActionResult Echo([FromQuery] string name = "nieznajomy", [FromQuery] int count = 1) =>
@@ -87,22 +98,100 @@ public class BookController : Controller
     public IActionResult Create() => View(new BookFormViewModel());
 
     [HttpPost]
-    public IActionResult Create(BookFormViewModel vm)
+    public async Task<IActionResult> Create(BookFormViewModel vm)
     {
+        if (await _books.IsbnExistsAsync(vm.Isbn))
+        {
+            ModelState.AddModelError(nameof(vm.Isbn), "Ksiazka o podanym numerze ISBN juz istnieje");
+        }
+
         if (!ModelState.IsValid) return View(vm);
 
-        BookStoreMemory.Books.Add(new Book
+        var book = new Book
         {
-            Id = BookStoreMemory.Books.Max(b => b.Id) + 1,
             Title = vm.Title,
             Isbn = vm.Isbn,
             PublicationDate = vm.PublicationDate,
             NumPages = vm.NumPages,
             Price = vm.Price,
-            Author = vm.Author
-        });
+            Author = vm.Author,
+            Publisher = vm.Publisher
+        };
 
+        await _books.AddAsync(book);
         TempData["Success"] = $"Dodano ksiazke \"{vm.Title}\".";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var book = await _books.GetByIdAsync(id);
+        if (book == null) return NotFound();
+
+        var vm = new BookFormViewModel
+        {
+            Id = book.Id,
+            Title = book.Title,
+            Isbn = book.Isbn,
+            PublicationDate = book.PublicationDate,
+            NumPages = book.NumPages,
+            Price = book.Price,
+            Author = book.Author,
+            Publisher = book.Publisher
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Edit(int id, BookFormViewModel vm)
+    {
+        if (id != vm.Id) return BadRequest();
+
+        if (await _books.IsbnExistsAsync(vm.Isbn, id))
+        {
+            ModelState.AddModelError(nameof(vm.Isbn), "Ksiazka o podanym numerze ISBN juz istnieje");
+        }
+
+        if (!ModelState.IsValid) return View(vm);
+
+        var book = new Book
+        {
+            Id = id,
+            Title = vm.Title,
+            Isbn = vm.Isbn,
+            PublicationDate = vm.PublicationDate,
+            NumPages = vm.NumPages,
+            Price = vm.Price,
+            Author = vm.Author,
+            Publisher = vm.Publisher
+        };
+
+        var ok = await _books.UpdateAsync(book);
+        if (!ok) return NotFound();
+
+        TempData["Success"] = $"Zaktualizowano ksiazke \"{vm.Title}\".";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var book = await _books.GetByIdAsync(id);
+        if (book == null) return NotFound();
+        return View(book);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var book = await _books.GetByIdAsync(id);
+        var title = book?.Title ?? "";
+        var ok = await _books.DeleteAsync(id);
+        if (!ok) return NotFound();
+
+        TempData["Success"] = $"Usunieto ksiazke \"{title}\".";
         return RedirectToAction(nameof(Index));
     }
 }
