@@ -2,6 +2,7 @@ using System.Globalization;
 using BookStore.Web.Data;
 using BookStore.Web.Filters;
 using BookStore.Web.Middleware;
+using BookStore.Web.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(o =>
     o.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
+builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddSingleton<RequestStats>();
 builder.Services.AddScoped<LogActionFilter>();
 builder.Services.AddScoped<LogActionFilter2>();
@@ -49,5 +51,11 @@ app.MapControllerRoute("docs", "docs/{*path}",
     new { controller = "Home", action = "Docs" });
 app.MapControllerRoute("admin-area", "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
 app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.Run();

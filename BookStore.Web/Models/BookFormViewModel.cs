@@ -4,6 +4,8 @@ namespace BookStore.Web.Models;
 
 public class BookFormViewModel : IValidatableObject
 {
+    public int Id { get; set; }
+
     [Required(ErrorMessage = "Tytuł jest wymagany")]
     [StringLength(200, MinimumLength = 2, ErrorMessage = "Tytuł: 2–200 znaków")]
     [Display(Name = "Tytuł")]
@@ -28,6 +30,9 @@ public class BookFormViewModel : IValidatableObject
     [Required]
     [Display(Name = "Autor")]
     public string Author { get; set; } = "";
+
+    [Display(Name = "Wydawca")]
+    public string? Publisher { get; set; }
 
     [RegularExpression(@"^[A-Z]{3}-\d{4}$", ErrorMessage = "Kod wydawcy musi mieć format XXX-0000 (3 wielkie litery, myślnik, 4 cyfry)")]
     [Display(Name = "Kod wydawcy")]
