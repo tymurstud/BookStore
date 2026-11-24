@@ -29,6 +29,10 @@ public class BookFormViewModel : IValidatableObject
     [Display(Name = "Autor")]
     public string Author { get; set; } = "";
 
+    [RegularExpression(@"^[A-Z]{3}-\d{4}$", ErrorMessage = "Kod wydawcy musi mieć format XXX-0000 (3 wielkie litery, myślnik, 4 cyfry)")]
+    [Display(Name = "Kod wydawcy")]
+    public string? PublisherCode { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (PublicationDate.HasValue && PublicationDate.Value.Year < 1900 && Price > 100)
