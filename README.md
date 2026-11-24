@@ -122,3 +122,55 @@ Walidacja działa po stronie klienta (jQuery Validation Unobtrusive, atrybuty `d
 2. `ViewBag`/`ViewData` przekazują dane między akcją a widokiem w ramach jednego żądania. `TempData` przechowuje dane przez jedno przekierowanie (żądanie + następne żądanie po redirect).
 3. Powody tworzenia modelu widoku: (1) ochrona przed overpostingiem – formularz nie może nadpisać pól, których nie ma w VM; (2) inne reguły walidacji niż w encji bazy danych; (3) możliwość agregacji danych z wielu encji w jednym obiekcie.
 4. `ModelState.IsValid` sprawdza czy wszystkie atrybuty walidacji zostały spełnione i czy model binding nie napotkał błędów (np. niepoprawny format liczby). Jest wykonywany przez framework automatycznie podczas wiązania modelu w akcji POST.
+
+
+---
+
+# Lab 3 – Routing, middleware i filtry
+
+## A. Trasy konwencjonalne
+
+W `Program.cs` zarejestrowano trasy w kolejności od najbardziej szczegółowych do ogólnej:
+1. `books-by-year` (`books/year/{year:int:min(1450)}`) – ograniczenie typu `int` oraz minimalnej wartości 1450 (rok druku pierwszej książki Gutenberga).
+2. `books-by-isbn` (`books/isbn/{isbn:regex(^\\d{{13}}$)}`) – wyrażenie regularne wymuszające dokładnie 13 cyfr.
+3. `archive` (`archive/{year:int}/{month:int:range(1,12)}`) – trasa archiwum z ograniczeniem zakresu miesiąca 1–12.
+4. `docs` (`docs/{*path}`) – trasa typu catch-all przekazująca całą podścieżkę do parametru `path`.
+5. `admin-area` (`{area:exists}/{controller=Dashboard}/{action=Index}/{id?}`) – obsługa obszaru administracyjnego.
+6. `default` (`{controller=Home}/{action=Index}/{id?}`) – trasa domyślna.
+
+## B. Routing oparty na atrybutach i zestawienie tras
+
+Dla akcji `BookController.Details` zastosowano routing atrybutowy:
+`[HttpGet("Book/Details/{id:int}")]`.
+Akcja przestaje być dostępna przez konwencjonalne trasy domyślne, lecz tag helpery Razor (`asp-action="Details" asp-route-id="3"`) generują adresy poprawnie na podstawie szablonu atrybutu.
+
+W `HomeController` dodano akcję `Routes` korzystającą z `IActionDescriptorCollectionProvider`, prezentującą wszystkie zarejestrowane trasy. Pełne zestawienie znajduje się w pliku `routes.md`.
+
+## C. Obszar Admin
+
+Utworzono obszar `Admin` z własnym layoutem `_AdminLayout.cshtml`, nawigacją oraz kontrolerami:
+- `DashboardController` (`/Admin/Dashboard`) – wyświetla statystyki serwera (łączną liczbę zapytań oraz Top 5 najpopularniejszych ścieżek).
+- `AuthorsController` (`/Admin/Authors`) – lista oraz dodawanie autorów w pamięci podręcznej (`AuthorStore`).
+
+## D. Middleware licznika żądań i czasu obsługi
+
+Zaimplementowano `RequestTimingMiddleware` oraz singleton `RequestStats`:
+- Dodaje do nagłówków odpowiedzi `X-Elapsed-Ms` (czas generowania w milisekundach) oraz `X-Request-Count` (numer obsłużonego żądania).
+- Zlicza liczbę wywołań poszczególnych ścieżek za pomocą bezpiecznego wątkowo `ConcurrentDictionary<string, long>`, co pozwala na prezentację Top 5 na Dashboardzie.
+- Obsługuje mechanizm short-circuit dla ścieżek `/blokada` zwracając status 403 Forbidden bez przekazywania żądania dalej w potoku.
+
+## E. Filtry akcji i filtry wyjątków
+
+- `LogActionFilter` – filtr akcji logujący wejście i wyjście z akcji wraz z przekazanymi argumentami (`START`/`KONIEC`). Zarejestrowany jako `Scoped` i nałożony atrybutem `[ServiceFilter(typeof(LogActionFilter))]`.
+- `MeasureTimeAttribute` – filtr akcji dodający nagłówek `X-Action-Ms`.
+- `GlobalExceptionFilter` – globalny filtr wyjątków (`builder.Services.AddControllersWithViews(o => o.Filters.Add<GlobalExceptionFilter>())`). Dla ścieżek `/api` zwraca `ProblemDetails` (JSON, status 500), a dla pozostałych widok `Error.cshtml` ze statusem 500 i identyfikatorem śladu. Do testów dodano akcję `/Book/Boom`.
+
+## F. Strony błędów 404 i 500
+
+W `Program.cs` skonfigurowano `app.UseStatusCodePagesWithReExecute("/Home/HttpStatus", "?code={0}")`.
+Akcja `HomeController.HttpStatus(int code)` zwraca odpowiedni kod HTTP oraz dedykowany widok z czytelnym komunikatem:
+- 404: "Nie znaleziono strony lub zasobu."
+- 403: "Brak uprawnień do tego zasobu."
+- 401: "Wymagane logowanie."
+- pozostałe kody: "Serwer zwrócił kod błędu."
+Dzięki `WithReExecute` przeglądarka zachowuje oryginalny URL żądania i właściwy kod statusu HTTP.
