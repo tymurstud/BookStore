@@ -1,0 +1,20 @@
+@model List<BookStore.Web.Models.RouteEntry>
+
+@{
+    ViewData["Title"] = "Trasy aplikacji";
+}
+
+<h2>Wszystkie trasy</h2>
+<table class="table table-sm">
+    <thead><tr><th>URL / Template</th><th>Kontroler.Akcja</th><th>Metody HTTP</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td><code>@r.Template</code></td>
+                <td>@r.Action</td>
+                <td>@(string.IsNullOrEmpty(r.Methods) ? "GET" : r.Methods)</td>
+            </tr>
+        }
+    </tbody>
+</table>
