@@ -1,0 +1,18 @@
+@model int
+
+@{
+    ViewData["Title"] = $"Blad {Model}";
+    var message = Model switch
+    {
+        404 => "Nie znaleziono strony lub zasobu.",
+        403 => "Brak uprawnien do tego zasobu.",
+        401 => "Wymagane logowanie.",
+        _ => "Serwer zwrocil kod bledu."
+    };
+}
+
+<div class="text-center py-5">
+    <h1 class="display-1 text-danger">@Model</h1>
+    <h2>@message</h2>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">Strona glowna</a>
+</div>
