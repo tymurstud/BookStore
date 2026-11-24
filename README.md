@@ -174,3 +174,57 @@ Akcja `HomeController.HttpStatus(int code)` zwraca odpowiedni kod HTTP oraz dedy
 - 401: "Wymagane logowanie."
 - pozostałe kody: "Serwer zwrócił kod błędu."
 Dzięki `WithReExecute` przeglądarka zachowuje oryginalny URL żądania i właściwy kod statusu HTTP.
+
+
+---
+
+# Lab 4 – Entity Framework Core (Code First) i wstrzykiwanie zależności
+
+## A. Pakiety i narzędzie dotnet ef
+
+Do projektu `BookStore.Web` zainstalowano pakiety:
+- `Microsoft.EntityFrameworkCore.Sqlite` – dostawca bazy danych SQLite dla EF Core.
+- `Microsoft.EntityFrameworkCore.Design` – narzędzia czasu projektowania do tworzenia migracji.
+Utworzono manifest narzędzi (`dotnet new tool-manifest`) i zainstalowano lokalne narzędzie `dotnet-ef`.
+
+## B. Encja, DbContext, łańcuch połączenia
+
+- Model `Book` rozszerzono o pole `Publisher` oraz atrybuty walidacji (`[Required]`, `[StringLength(200)]`).
+- Utworzono klasę kontekstu `AppDbContext` w przestrzeni `BookStore.Web.Data`:
+  - `DbSet<Book> Books => Set<Book>();`
+  - W `OnModelCreating`: precyzja ceny `HasPrecision(10, 2)`, unikalny indeks na numerze ISBN `HasIndex(x => x.Isbn).IsUnique()`, dane początkowe seedowane przez `HasData` (Solaris, Lalka).
+- W `appsettings.json` zdefiniowano połączenie: `"ConnectionStrings": { "Default": "Data Source=bookstore.db" }` oraz włączono logowanie poleceń SQL: `"Microsoft.EntityFrameworkCore.Database.Command": "Information"`.
+- Zarejestrowano kontekst w `Program.cs` za pomocą `builder.Services.AddDbContext<AppDbContext>`.
+
+## C. Migracje i baza SQLite
+
+- Wygenerowano migrację początkową `InitialCreate` (`dotnet ef migrations add InitialCreate`) oraz zastosowano ją na bazie (`dotnet ef database update`).
+- Dodano drugą migrację `AddPublisher` dodającą kolumnę `Publisher` do tabeli `Books`.
+- Zaimplementowano automatyczne wykonywanie migracji przy starcie aplikacji w `Program.cs` (`Database.MigrateAsync()` z użyciem `CreateScope()`).
+
+## D. Serwis i wstrzykiwanie zależności
+
+Wydzielono logikę dostępu do danych z kontrolera do dedykowanego serwisu:
+- Zdefiniowano interfejs `IBookService` oraz rekord `PagedResult<T>` obsługujący stronicowanie.
+- Zaimplementowano `BookService`:
+  - Odczyt danych z użyciem `AsNoTracking()` dla operacji pobierania listy, co wyłącza śledzenie zmian przez ChangeTracker i optymalizuje zużycie pamięci.
+  - Asynchroniczne metody `GetByIdAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`, `IsbnExistsAsync`.
+- Zarejestrowano serwis w kontenerze DI jako `Scoped` (`builder.Services.AddScoped<IBookService, BookService>()`).
+- Zadanie D1: Zmiana na `AddSingleton` w trybie Development powoduje błąd walidacji zakresów (`InvalidOperationException`), ponieważ serwis typu singleton nie może bezpośrednio zależeć od usługi o zasięgu scoped (`AppDbContext`).
+- Zadanie D2: Kontroler zależy od abstrakcji `IBookService`, a nie od konkretnego kontekstu bazy danych, co umożliwia łatwe mockowanie serwisu w testach jednostkowych (Lab 7) bez konieczności tworzenia bazy danych.
+
+## E. Pełny CRUD, stronicowanie i wyszukiwanie
+
+W `BookController` zaimplementowano pełen zestaw akcji opartych na `IBookService`:
+- `Index`: obsługa stronicowania (`page`, `pageSize`), wyszukiwania wielopolowego (tytuł lub ISBN) oraz sortowania po tytule, dacie wydania lub cenie (`asc`/`desc`).
+- `Details`: pobieranie szczegółów książki po identyfikatorze lub zwracanie 404 NotFound.
+- `Create`: walidacja unikalności ISBN, mapowanie `BookFormViewModel` -> `Book`, wzorzec PRG z komunikatem w `TempData`.
+- `Edit`: walidacja poprawności identyfikatora, sprawdzanie unikalności ISBN z wyłączeniem edytowanego rekordu (`IsbnExistsAsync(isbn, id)`), aktualizacja encji w bazie.
+- `Delete` oraz `DeleteConfirmed` (`[ActionName("Delete")]`): potwierdzenie usunięcia i bezpieczne usunięcie książki z bazy.
+- Przygotowano dedykowane widoki: `Index.cshtml` (nawigacja stronicowania, nagłówki sortowania, pole wyszukiwania), `Edit.cshtml`, `Delete.cshtml`, `Details.cshtml`, `Filtered.cshtml`.
+
+## Zadania samodzielne
+
+1. Sortowanie: zaimplementowano sortowanie po polach `title`, `price` i `date` w kierunkach `asc` i `desc` w `GetPageAsync` wyłącznie za pomocą drzewa wyrażeń LINQ (`OrderBy` / `OrderByDescending`), bez surowych zapytań SQL.
+2. Wyszukiwanie wielopolowe: filtrowanie po tytule i ISBN (`b.Title.Contains(term) || b.Isbn.Contains(term)`) tłumaczone jest przez dostawcę SQLite bezpośrednio na klauzulę `WHERE ("b"."Title" LIKE '%' || @term || '%') OR ("b"."Isbn" LIKE '%' || @term || '%')` po stronie bazy danych.
+3. Automatyczna migracja: `await db.Database.MigrateAsync()` uruchamiane w bloku `CreateScope()` przy starcie aplikacji gwarantuje aktualność schematu bazy danych.
