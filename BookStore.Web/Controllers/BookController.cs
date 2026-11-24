@@ -15,6 +15,7 @@ public class BookController : Controller
         ViewBag.Id = id;
         return View();
     }
+    public IActionResult Index() => View(BookStoreMemory.Books);
     public IActionResult Echo([FromQuery] string name = "nieznajomy", [FromQuery] int count = 1) =>
         Content(string.Join("\n", Enumerable.Repeat($"Cześć, {name}!", Math.Clamp(count, 1, 20))));
 
@@ -44,4 +45,27 @@ public class BookController : Controller
 
     public IActionResult Health() =>
         Json(new { status = "ok", time = DateTime.Now });
+
+    [HttpGet]
+    public IActionResult Create() => View(new BookFormViewModel());
+
+    [HttpPost]
+    public IActionResult Create(BookFormViewModel vm)
+    {
+        if (!ModelState.IsValid) return View(vm);
+
+        BookStoreMemory.Books.Add(new Book
+        {
+            Id = BookStoreMemory.Books.Max(b => b.Id) + 1,
+            Title = vm.Title,
+            Isbn = vm.Isbn,
+            PublicationDate = vm.PublicationDate,
+            NumPages = vm.NumPages,
+            Price = vm.Price,
+            Author = vm.Author
+        });
+
+        TempData["Success"] = $"Dodano ksiazke \"{vm.Title}\".";
+        return RedirectToAction(nameof(Index));
+    }
 }
