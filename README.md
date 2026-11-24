@@ -1,6 +1,10 @@
-# BookStore – Lab 1
+# BookStore – Lab 1 & Lab 2
 
-Aplikacja ASP.NET Core MVC (projekt BookStore.Web) wykonana w ramach Lab 1: pierwsza aplikacja MVC i protokół HTTP.
+Aplikacja ASP.NET Core MVC (projekt BookStore.Web) wykonana w ramach laboratoriów.
+
+---
+
+# Lab 1 – Pierwsza aplikacja MVC i protokół HTTP
 
 ## A1. Struktura projektu
 
@@ -66,3 +70,55 @@ Uwaga: port aplikacji zależy od profilu uruchomieniowego (podczas testów w Pos
 2. 200 OK – sukces; 302 Found – tymczasowe przekierowanie; 400 Bad Request – błędne żądanie; 401 Unauthorized – brak uwierzytelnienia; 403 Forbidden – brak uprawnień; 404 Not Found – nie znaleziono zasobu; 405 Method Not Allowed – niedozwolona metoda HTTP; 415 Unsupported Media Type – nieobsługiwany typ zawartości; 500 Internal Server Error – błąd serwera.
 3. Model binding określa źródło na podstawie atrybutów ([FromQuery], [FromRoute], [FromBody]). Bez atrybutów szuka wartości po nazwie parametru w danych formularza, w trasie i w query string.
 4. Pliki z wwwroot są serwowane przez middleware UseStaticFiles. Katalog Controllers zawiera kod źródłowy, który jest kompilowany i wykonywany na serwerze, a nie wysyłany klientowi.
+
+---
+
+# Lab 2 – Widoki Razor, formularze i walidacja
+
+## A. Model i magazyn w pamięci
+
+Dodano klasę `Book` z polami: Id, Title, Isbn, PublicationDate, NumPages, Price, Author.
+Dane są przechowywane w statycznej liście `BookStoreMemory.Books` z trzema domyślnymi książkami (Solaris, Cyberiada, Lalka). Lista jest tymczasowa – po restarcie aplikacji nowo dodane książki znikają (baza danych zostanie dodana w Lab 4).
+
+## B. Layout, _ViewStart, sekcje
+
+Zmodyfikowano `_Layout.cshtml`:
+- dodano link "Książki" w nawigacji (asp-controller="Book" asp-action="Index"),
+- dodano opcjonalną sekcję `@await RenderSectionAsync("Styles", required: false)` przed `</head>`,
+- dodano opcjonalną sekcję `@await RenderSectionAsync("Scripts", required: false)` przed `</body>`,
+- dodano sekcję `@await RenderSectionAsync("Footer", required: false)` w stopce,
+- dodano komunikat sukcesu z TempData: `@if (TempData["Success"] is string ok) { <div class="alert alert-success">@ok</div> }`.
+
+Zadanie B1: widok `Index.cshtml` definiuje `@section Styles { <style> h2 { color: #0a6640; } </style> }` – reguła CSS trafia do `<head>` layoutu. Gdy widok definiuje sekcję, której layout nie renderuje (`@await RenderSectionAsync`), ASP.NET Core zgłosi wyjątek `InvalidOperationException` podczas renderowania.
+
+## C. Lista książek i widok częściowy wiersza
+
+`BookController.Index()` zwraca `View(BookStoreMemory.Books)`. Widok `Views/Book/Index.cshtml` iteruje po liście i renderuje każdy wiersz przez widok częściowy `_BookRow.cshtml`. Użycie widoku częściowego pozwala oddzielić logikę wiersza i wielokrotnie go reużywać.
+
+## D. Model widoku i walidacja atrybutami
+
+Klasa `BookFormViewModel` zawiera pola formularza z atrybutami walidacji:
+- `[Required]`, `[StringLength(200, MinimumLength = 2)]` dla tytułu,
+- `[Isbn]` (własny atrybut) dla numeru ISBN,
+- `[NotInFuture]` (własny atrybut) dla daty wydania,
+- `[Range(1, 20000)]` dla liczby stron,
+- `[Range(0.01, 10000)]` dla ceny,
+- `IValidatableObject` – walidacja na poziomie modelu: książka sprzed 1900 r. nie może kosztować więcej niż 100 zł.
+
+## E. Własne atrybuty walidacji
+
+- `NotInFutureAttribute` – sprawdza czy data nie jest z przyszłości.
+- `IsbnAttribute` – sprawdza format ISBN-10 lub ISBN-13 (cyfry, myślniki i spacje dozwolone). Opcja `RequireChecksum = true` włącza weryfikację sumy kontrolnej ISBN-13. Domyślnie wyłączona, ponieważ dane z bazy gravity.db (Lab 5) zawierają numery ISBN niespełniające sumy kontrolnej.
+
+## F. Formularz z tag helperami i Post-Redirect-Get
+
+Formularz `Create.cshtml` używa tag helperów (`asp-for`, `asp-validation-for`, `asp-validation-summary`) i zawiera wszystkie pola z `BookFormViewModel`. Po poprawnym wysłaniu formularza następuje przekierowanie do `Index` (wzorzec PRG), co zapobiega ponownemu wysłaniu formularza przy odświeżeniu strony (F5). Zielony komunikat z `TempData["Success"]` przetrwa jedno przekierowanie i wyświetla się na liście książek.
+
+Walidacja działa po stronie klienta (jQuery Validation Unobtrusive, atrybuty `data-val-*`) oraz po stronie serwera (`ModelState.IsValid`).
+
+## Pytania kontrolne
+
+1. `@Model.Title` jest bezpieczne, bo Razor automatycznie koduje HTML (np. `<script>` staje się `&lt;script&gt;`). `@Html.Raw(Model.Title)` wyłącza kodowanie i jest podatne na XSS.
+2. `ViewBag`/`ViewData` przekazują dane między akcją a widokiem w ramach jednego żądania. `TempData` przechowuje dane przez jedno przekierowanie (żądanie + następne żądanie po redirect).
+3. Powody tworzenia modelu widoku: (1) ochrona przed overpostingiem – formularz nie może nadpisać pól, których nie ma w VM; (2) inne reguły walidacji niż w encji bazy danych; (3) możliwość agregacji danych z wielu encji w jednym obiekcie.
+4. `ModelState.IsValid` sprawdza czy wszystkie atrybuty walidacji zostały spełnione i czy model binding nie napotkał błędów (np. niepoprawny format liczby). Jest wykonywany przez framework automatycznie podczas wiązania modelu w akcji POST.
