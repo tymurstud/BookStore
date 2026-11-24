@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin – @ViewData["Title"] - BookStore</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">
+                BookStore Admin
+            </a>
+            <div class="d-flex">
+                <a class="nav-link text-light me-3" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                <a class="nav-link text-light me-3" asp-area="Admin" asp-controller="Authors" asp-action="Index">Autorzy</a>
+                <a class="nav-link text-warning" asp-area="" asp-controller="Book" asp-action="Index">Sklep</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success">@ok</div>
+        }
+        @RenderBody()
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

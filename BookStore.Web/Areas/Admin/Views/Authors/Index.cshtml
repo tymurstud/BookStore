@@ -1,0 +1,17 @@
+@model List<BookStore.Web.Models.Author>
+
+@{
+    ViewData["Title"] = "Autorzy";
+}
+
+<h2>Autorzy</h2>
+<a asp-action="Create" class="btn btn-primary mb-3">+ Dodaj autora</a>
+<table class="table">
+    <thead><tr><th>Id</th><th>Imie i nazwisko</th></tr></thead>
+    <tbody>
+        @foreach (var a in Model)
+        {
+            <tr><td>@a.Id</td><td>@a.Name</td></tr>
+        }
+    </tbody>
+</table>
